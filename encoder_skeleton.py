@@ -119,7 +119,6 @@ def encode_instruction(instruction: str) -> int:
 
     # Formato I(aritmetica)
     if instruction_name in ['addi','andi']:
-
         #Obtener los registros y valor del inmediato
         rd = operands_numbers[0]
         rs1 = operands_numbers[1]
@@ -161,13 +160,53 @@ def encode_instruction(instruction: str) -> int:
     
     # Formato S
     if instruction_name in ['sw','sb']:
-        return 
+        #Obtener los registros y valor del inmediato
+        rs2 = operands_numbers[0]
+        imm = operands_numbers[1]
+        rs1 = operands_numbers[2]
+
+        # Convertir inmediato para negativos(Usa complemento a dos)
+        imm_11_5 = (imm >> 5) & 0x7F
+        imm_0_4 = imm & 0x1F
+
+
+        # Colocar cada campo según el formato de la instrucción
+        encoded = (
+            (imm_11_5 << 25)  |    #Bits del 31 al 25
+            (rs2 << 20 ) |    #Bits del 24 al 20
+            (rs1 << 15) |    #Bits del 19 al 15
+            (funct3 << 12) | #Bits del 14 al 12
+            (imm_0_4 << 7) |      #Bits del 11 al 7
+            (opcode)         #Bits del 6 al 0
+        )
+        return encoded
     
     # Formato B
     if instruction_name in ['bne','beq']:
-        return 
-    
+        #Obtener los registros y valor del inmediato
+        rs1 = operands_numbers[0]
+        rs2 = operands_numbers[1]
+        imm = operands_numbers[2]
 
+        #Immediatos
+        imm_12 = (imm >> 12) & 0x1 # Mascara de 1 bit
+        imm_10_5 = (imm >> 5) & 0x3F # Mascara de 6 bits
+        imm_4_1 = (imm >> 1) & 0xF # Mascara de 4 bits
+        imm_11 = (imm >> 11) & 0x1 # Mascara de 1 bit
+
+        encoded = (
+            (imm_12 << 31)|      # Bit 31 
+            (imm_10_5 << 25)|    #Bits del 30 al 25
+            (rs2 << 20 ) |       #Bits del 24 al 20
+            (rs1 << 15) |        #Bits del 19 al 15
+            (funct3 << 12) |     #Bits del 14 al 12
+            (imm_4_1 << 8) |     #Bits del 8 al 11
+            (imm_11 << 7) |      #Bit 7
+            (opcode)             #Bits del 6 al 0
+        )
+
+        return encoded 
+    
     raise NotImplementedError("encode_instruction: pendiente de implementar")
 
 
@@ -193,7 +232,7 @@ def main():
     instruction = sys.argv[1]
     word = encode_instruction(instruction) & 0xFFFFFFFF
 
-    print(explain_instruction(instruction, word))
+    #print(explain_instruction(instruction, word))
 
     # No modificar el formato de la siguiente línea: la especificación la
     # requiere, literal, para permitir la validación automática.
