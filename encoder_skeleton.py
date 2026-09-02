@@ -73,17 +73,29 @@ def encode_instruction(instruction: str) -> int:
     funct7 = instruction_codes[instruction_name]["funct7"]
 
     # Parsear operandos
-    operands_separate = operands.split(',') # Se separan por comas
-
     # Convertir los registros de texto a numero entero
     # Como x5 a solo 5
     operands_numbers=[] # Lista para guardar el numero del operando (x5 se guarda solo el 5)
 
-    for operand in operands_separate:
-        if operand.startswith("x"):
-            operands_numbers.append(int(operand[1:]))
-        else:
-            operands_numbers.append(int(operand))
+    if "(" in operands: # Casos para instrucciones con memoria
+        register_part, memory_part = operands.split(",")
+        reg = register_part.strip().replace("x","")
+        operands_numbers.append(int(reg)) # Guardar el registro
+
+        #Separar inmediato de registro
+        imm_part, reg_part = memory_part.strip().rstrip(")").split("(")
+
+        #Guardar en operands_numbers
+        operands_numbers.append(int(imm_part))
+        operands_numbers.append(int(reg_part[1:]))
+
+    else:
+        operands_separate = operands.split(',') # Se separan por comas
+        for operand in operands_separate:
+            if operand.startswith("x"):
+                operands_numbers.append(int(operand[1:]))
+            else:
+                operands_numbers.append(int(operand))
 
     # Formato R
     if instruction_name in ['add','sub','and','or']:
@@ -107,11 +119,45 @@ def encode_instruction(instruction: str) -> int:
 
     # Formato I(aritmetica)
     if instruction_name in ['addi','andi']:
-        return 
+
+        #Obtener los registros y valor del inmediato
+        rd = operands_numbers[0]
+        rs1 = operands_numbers[1]
+        imm = operands_numbers[2]
+
+        # Convertir inmediato para negativos(Usa complemento a dos)
+        imm = imm & 0xFFF
+
+        # Colocar cada campo según el formato de la instrucción
+        encoded = (
+            (imm << 20) |    #Bits del 31 al 20
+            (rs1 << 15) |    #Bits del 19 al 15
+            (funct3 << 12) | #Bits del 14 al 12
+            (rd << 7) |      #Bits del 11 al 7
+            (opcode)         #Bits del 6 al 0
+        )
+        return encoded
     
     # Formato I(carga)
     if instruction_name in ['lw','lb']:
-        return 
+
+        #Obtener los registros y valor del inmediato
+        rd = operands_numbers[0]
+        imm = operands_numbers[1]
+        rs1 = operands_numbers[2]
+
+        # Convertir inmediato para negativos(Usa complemento a dos)
+        imm = imm & 0xFFF
+
+        # Colocar cada campo según el formato de la instrucción
+        encoded = (
+            (imm << 20) |    #Bits del 31 al 20
+            (rs1 << 15) |    #Bits del 19 al 15
+            (funct3 << 12) | #Bits del 14 al 12
+            (rd << 7) |      #Bits del 11 al 7
+            (opcode)         #Bits del 6 al 0
+        )
+        return encoded
     
     # Formato S
     if instruction_name in ['sw','sb']:
