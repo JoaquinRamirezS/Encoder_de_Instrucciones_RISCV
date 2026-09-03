@@ -17,37 +17,8 @@ import sys
 SOPORTADAS = ["add", "sub", "and", "or", "addi", "andi",
               "lw", "lb", "sw", "sb", "beq", "bne"]
 
-
-def encode_instruction(instruction: str) -> int:
-    """
-    Recibe una instrucción como texto, p. ej. "add x5, x6, x7", y debe
-    retornar su codificación de 32 bits como entero (0 <= valor < 2**32).
-
-    Debe soportar únicamente las instrucciones en SOPORTADAS. Los valores
-    de opcode/funct3/funct7 de cada una NO se proveen aquí: deben
-    investigarse en el manual oficial de la ISA RISC-V (ver referencia en
-    la especificación) y documentarse en el README.
-    """
-    # TODO: implementar. Sugerencia: parsear el mnemónico y los operandos,
-    # despachar según el formato (R/I/S/B), y ensamblar los campos con
-    # operaciones de bits.
-
-    # Eliminar espacios al principio y final de la instrucción
-    instruction = instruction.strip()
-
-    for name in sorted(SOPORTADAS, key=len, reverse=True): # Busca en la lista de soportadas de mayor cant de caracteres a menor
-        if instruction.startswith(name): # Si alguna instrucción pertenece a soportada 
-            instruction_name = name # Guarda el nombre
-            operands = instruction[len(name):] # Calcula el tamaño de la instrucción encontrada y toma todo lo demás como operandos
-            break
-    else:
-        raise ValueError("La instruccion no es soportada")
-        
-    # Eliminar espaciones entre operandos 
-    operands = operands.replace(" ", "")
-
-    # Valores que establece RISC-V   para cada instrucción.
-    instruction_codes = {
+# Valores que establece RISC-V   para cada instrucción.
+instruction_codes = {
 
      # Instrucciones formato R   
      "R":{
@@ -93,6 +64,34 @@ def encode_instruction(instruction: str) -> int:
         }
       }
     }
+
+def encode_instruction(instruction: str) -> int:
+    """
+    Recibe una instrucción como texto, p. ej. "add x5, x6, x7", y debe
+    retornar su codificación de 32 bits como entero (0 <= valor < 2**32).
+
+    Debe soportar únicamente las instrucciones en SOPORTADAS. Los valores
+    de opcode/funct3/funct7 de cada una NO se proveen aquí: deben
+    investigarse en el manual oficial de la ISA RISC-V (ver referencia en
+    la especificación) y documentarse en el README.
+    """
+    # TODO: implementar. Sugerencia: parsear el mnemónico y los operandos,
+    # despachar según el formato (R/I/S/B), y ensamblar los campos con
+    # operaciones de bits.
+
+    # Eliminar espacios al principio y final de la instrucción
+    instruction = instruction.strip()
+
+    for name in sorted(SOPORTADAS, key=len, reverse=True): # Busca en la lista de soportadas de mayor cant de caracteres a menor
+        if instruction.startswith(name): # Si alguna instrucción pertenece a soportada 
+            instruction_name = name # Guarda el nombre
+            operands = instruction[len(name):] # Calcula el tamaño de la instrucción encontrada y toma todo lo demás como operandos
+            break
+    else:
+        raise ValueError("La instrucción no es soportada")
+        
+    # Eliminar espaciones entre operandos 
+    operands = operands.replace(" ", "")
 
     # Verificar que se encuentre la instruccion en instructions code
     for formato, data in instruction_codes.items():
@@ -209,12 +208,12 @@ def encode_instruction(instruction: str) -> int:
 
         # Colocar cada campo según el formato de la instrucción
         encoded = (
-            (imm_11_5 << 25)  |    #Bits del 31 al 25
+            (imm_11_5 << 25)| #Bits del 31 al 25
             (rs2 << 20 ) |    #Bits del 24 al 20
-            (rs1 << 15) |    #Bits del 19 al 15
-            (funct3 << 12) | #Bits del 14 al 12
-            (imm_0_4 << 7) |      #Bits del 11 al 7
-            (opcode)         #Bits del 6 al 0
+            (rs1 << 15) |     #Bits del 19 al 15
+            (funct3 << 12) |  #Bits del 14 al 12
+            (imm_0_4 << 7) |  #Bits del 11 al 7
+            (opcode)          #Bits del 6 al 0
         )
         return encoded
     
@@ -259,7 +258,31 @@ def explain_instruction(instruction: str, word: int) -> str:
     El formato visual (colores, tabla, arte ASCII, etc.) queda a su
     criterio, siempre que sea claro.
     """
-    # TODO: implementar.
+    # Eliminar espacios al principio y final de la instrucción
+    instruction = instruction.strip()
+
+    for name in sorted(SOPORTADAS, key=len, reverse=True): # Busca en la lista de soportadas de mayor cant de caracteres a menor
+        if instruction.startswith(name): # Si alguna instrucción pertenece a soportada 
+            instruction_name = name # Guarda el nombre
+            break
+    else:
+        raise ValueError("La instrucción no es soportada")
+
+    #Detectar formato
+    formato = None #Inicia formato vacio
+    #Recorre el diccionario instruction_codes
+    for fmt, data in instruction_codes.items():
+
+        #Se verifica si la instrucción que se está verificando esta dentro
+        # de las instrucciones de formato
+        if instruction_name in data["instructions"]:
+             # Si está se guarda el nombre del formato
+             formato = fmt
+             break
+    # Si el formato no se detecta se despliega un msj
+    if formato is None:
+        return "El formato no se detectó"
+       
     raise NotImplementedError("explain_instruction: pendiente de implementar")
 
 
