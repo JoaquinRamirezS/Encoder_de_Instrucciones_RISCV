@@ -282,9 +282,95 @@ def explain_instruction(instruction: str, word: int) -> str:
     # Si el formato no se detecta se despliega un msj
     if formato is None:
         return "El formato no se detectó"
-       
-    raise NotImplementedError("explain_instruction: pendiente de implementar")
 
+    # Extraer campos según formato
+    #Utilizando desplazamiento y mascaras para obtener la cantidad de bits requerida por campo
+
+    if formato == "R":
+        campos = [
+            # Etiquetas y desplazamiento de 25 a la derecha, mascara de 111 1111 para obtener solo los ultimos 7 bits
+            # El 7 indica la cantidad de bits que comprende cada campo
+            #Aplica igual con las demás
+            ("[31:25]","funct7", (word >> 25) & 0x7F, 7),
+            ("[24:20]","rs2", (word >> 20) & 0x1F, 5),
+            ("[19:15]","rs1", (word >> 15) & 0x1F, 5),
+            ("[14:12]","funct3", (word >> 12) & 0x07, 3),
+            ("[11:7]","rd", (word >> 7) & 0x1F, 5),
+            ("[6:0]","opcode", (word) & 0x7F, 7),
+        ]
+
+    elif formato in ["I_Arithmetic","I_Load"]:
+        campos = [
+            ("[31:20]","imm[11:0]", (word >> 20) & 0xFFF, 12),
+            ("[19:15]","rs1", (word >> 15) & 0x1F, 5),
+            ("[14:12]","funct3", (word >> 12) & 0x07, 3),
+            ("[11:7]","rd", (word >> 7) & 0x1F, 5),
+            ("[6:0]","opcode", (word) & 0x7F, 7),
+        ]
+    elif formato == "S":
+        campos = [
+            ("[31:25]","imm[11:5]", (word >> 25) & 0x7F, 7),
+            ("[24:20]","rs2", (word >> 20) & 0x1F, 5),
+            ("[19:15]","rs1", (word >> 15) & 0x1F, 5),
+            ("[14:12]","funct3", (word >> 12) & 0x07, 3),
+            ("[11:7]","imm[4:0]", (word >> 7) & 0x1F, 5),
+            ("[6:0]","opcode", (word) & 0x7F, 7),
+        ]
+
+    elif formato == "B":
+        campos = [
+            ("[31]","imm[12]", (word >> 31) & 0x01, 1),
+            ("[30:25]","imm[10:5]", (word >> 25) & 0x3F, 6),
+            ("[24:20]","rs2", (word >> 20) & 0x1F, 5),
+            ("[19:15]","rs1", (word >> 15) & 0x1F, 5),
+            ("[14:12]","funct3", (word >> 12) & 0x07, 3),
+            ("[11:8]","imm[4:1]", (word >> 8) & 0x0F, 4),
+            ("[7]","imm[11]", (word >> 7) & 0x01, 1),
+            ("[6:0]","opcode", (word) & 0x7F, 7),
+        ]
+    else:
+        return "Error:Formato no conocido."
+    
+    # Tabla visual
+    #Colores
+    Verde = "\033[92m"
+    Amarillo = "\033[93m"
+    Azul = "\033[94m"
+    Reset = "\033[0m"
+
+    #Bordes simples
+    col_width = 12
+
+    #Borde superior
+    borde = " " * 10 + "+" + "+".join(["-" * col_width for _ in campos]) + "+"
+
+    #Fila de rangos
+    fila_ranges = " " * 10 + "|" + "|".join(f"{Verde}{r:^{col_width}}{Reset}" for r, _, _, _ in campos) + "|"
+    #Fila de nombres
+    fila_names = " " * 10 + "|" + "|".join(f"{Amarillo}{n:^{col_width}}{Reset}" for _, n, _, _ in campos) + "|"
+    #Fila Valores
+    fila_values = " " * 10 + "|" + "|".join(f"{Azul}{f'{v:0{bits}b}'.center(col_width)}{Reset}" for  _, _, v, bits in campos) + "|"
+
+    #Palabra entera en binario
+    binary_word = f"{word:032b}"
+    #Palabra binaria dividida en grupos de 4
+    binary_word_groups = " ".join(binary_word[i:i+4] for i in range(0, 32, 4))
+    #Palabra en hexadecimal
+    #hex_word = f"0x{word:08x}"
+
+    return (
+        f"Instrucción: {instruction}\n"
+        f"Formato: {formato}\n\n"
+        f"{borde}\n"
+        f"{fila_ranges}\n"
+        f"{borde}\n"
+        f"{fila_names}\n"
+        f"{borde}\n"
+        f"{fila_values}\n"
+        f"{borde}\n\n"
+        f"Palabra binaria: {binary_word_groups}"
+        #f"Palabra Hexadecimal: {hex_word}"
+    )
 
 def main():
     if len(sys.argv) != 2:
@@ -295,7 +381,7 @@ def main():
     instruction = sys.argv[1]
     word = encode_instruction(instruction) & 0xFFFFFFFF
 
-    #print(explain_instruction(instruction, word))
+    print(explain_instruction(instruction, word))
 
     # No modificar el formato de la siguiente línea: la especificación la
     # requiere, literal, para permitir la validación automática.
