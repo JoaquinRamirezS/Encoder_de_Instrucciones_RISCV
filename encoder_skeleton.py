@@ -32,45 +32,79 @@ def encode_instruction(instruction: str) -> int:
     # despachar según el formato (R/I/S/B), y ensamblar los campos con
     # operaciones de bits.
 
-    # Eliminar espacios al principio y final de la instruccion para evitar errores
-    instruction_name, operands = instruction.strip().split(maxsplit=1)
+    # Eliminar espacios al principio y final de la instrucción
+    instruction = instruction.strip()
+
+    for name in sorted(SOPORTADAS, key=len, reverse=True): # Busca en la lista de soportadas de mayor cant de caracteres a menor
+        if instruction.startswith(name): # Si alguna instrucción pertenece a soportada 
+            instruction_name = name # Guarda el nombre
+            operands = instruction[len(name):] # Calcula el tamaño de la instrucción encontrada y toma todo lo demás como operandos
+            break
+    else:
+        raise ValueError("La instruccion no es soportada")
+        
     # Eliminar espaciones entre operandos 
     operands = operands.replace(" ", "")
 
     # Valores que establece RISC-V   para cada instrucción.
     instruction_codes = {
 
-     # Instrucciones formato R     
-     "add":{"opcode": 0b0110011, "funct3": 0b000, "funct7": 0b0000000},
-     "sub":{"opcode": 0b0110011, "funct3": 0b000, "funct7": 0b0100000},
-     "and":{"opcode": 0b0110011, "funct3": 0b111, "funct7": 0b0000000},
-     "or":{"opcode": 0b0110011, "funct3": 0b110, "funct7": 0b0000000},
+     # Instrucciones formato R   
+     "R":{
+        "opcode": 0b0110011,
+        "instructions": {  
+            "add":{"funct3": 0b000, "funct7": 0b0000000},
+            "sub":{"funct3": 0b000, "funct7": 0b0100000},
+            "and":{"funct3": 0b111, "funct7": 0b0000000},
+            "or": {"funct3": 0b110, "funct7": 0b0000000},
+        }
+     },
 
     # Istrucciones formato I(aritmetica)
-    "addi":{"opcode": 0b0010011, "funct3": 0b000, "funct7": None},
-    "andi":{"opcode": 0b0010011, "funct3": 0b111, "funct7": None},
-
+    "I_Arithmetic":{
+        "opcode": 0b0010011,
+        "instructions":{
+            "addi":{"funct3": 0b000},
+            "andi":{"funct3": 0b111},
+        }
+    },
     # Instrucciones formato I(carga)
-    "lw":{"opcode": 0b0000011, "funct3": 0b010, "funct7": None},
-    "lb":{"opcode": 0b0000011, "funct3": 0b000, "funct7": None},
-
+    "I_Load":{
+        "opcode": 0b0000011,
+        "instructions":{
+            "lw":{"funct3": 0b010},
+            "lb":{"funct3": 0b000},
+        }
+    },
     # Instrucciones formato S
-    "sw":{"opcode": 0b0100011, "funct3": 0b010, "funct7": None},
-    "sb":{"opcode": 0b0100011, "funct3": 0b000, "funct7": None},
-
+    "S":{
+        "opcode": 0b0100011,
+        "instructions":{
+            "sw":{"funct3": 0b010},
+            "sb":{"funct3": 0b000},
+        }
+    },
     # Instrucciones formato B
-    "beq":{"opcode": 0b1100011, "funct3": 0b000, "funct7": None},
-    "bne":{"opcode": 0b1100011, "funct3": 0b001, "funct7": None}
+    "B":{
+        "opcode": 0b1100011,
+        "instructions":{
+            "beq":{"funct3": 0b000},
+            "bne":{"funct3": 0b001}
+        }
+      }
     }
 
     # Verificar que se encuentre la instruccion en instructions code
-    if instruction_name not in instruction_codes:
+    for formato, data in instruction_codes.items():
+        if instruction_name in data["instructions"]:
+            # Obtener códigos de instrucción
+            opcode = data["opcode"] # Opcode
+            funct3 = data["instructions"][instruction_name]["funct3"] #Obtiene funct3
+            funct7 = data["instructions"][instruction_name].get("funct7") # Obtiene funct7 si existe
+            break #Termina si encontró la instrucción
+    else:
         raise ValueError("La instrucción no es soportada.Revisar lista de soportadas")
 
-    # Obtener códigos de instrucción
-    opcode = instruction_codes[instruction_name]["opcode"]
-    funct3 = instruction_codes[instruction_name]["funct3"]
-    funct7 = instruction_codes[instruction_name]["funct7"]
 
     # Parsear operandos
     # Convertir los registros de texto a numero entero
@@ -98,7 +132,7 @@ def encode_instruction(instruction: str) -> int:
                 operands_numbers.append(int(operand))
 
     # Formato R
-    if instruction_name in ['add','sub','and','or']:
+    if formato == "R":
 
         #Obtener los registros
         rd = operands_numbers[0]
@@ -118,7 +152,7 @@ def encode_instruction(instruction: str) -> int:
         return encoded
 
     # Formato I(aritmetica)
-    if instruction_name in ['addi','andi']:
+    if formato == "I_Arithmetic":
         #Obtener los registros y valor del inmediato
         rd = operands_numbers[0]
         rs1 = operands_numbers[1]
@@ -138,7 +172,7 @@ def encode_instruction(instruction: str) -> int:
         return encoded
     
     # Formato I(carga)
-    if instruction_name in ['lw','lb']:
+    if formato == "I_Load":
 
         #Obtener los registros y valor del inmediato
         rd = operands_numbers[0]
@@ -159,13 +193,16 @@ def encode_instruction(instruction: str) -> int:
         return encoded
     
     # Formato S
-    if instruction_name in ['sw','sb']:
+    if formato == "S":
         #Obtener los registros y valor del inmediato
         rs2 = operands_numbers[0]
         imm = operands_numbers[1]
         rs1 = operands_numbers[2]
 
         # Convertir inmediato para negativos(Usa complemento a dos)
+        imm = imm & 0xFFF
+
+        # Separar inmediato
         imm_11_5 = (imm >> 5) & 0x7F
         imm_0_4 = imm & 0x1F
 
@@ -182,13 +219,16 @@ def encode_instruction(instruction: str) -> int:
         return encoded
     
     # Formato B
-    if instruction_name in ['bne','beq']:
+    if formato == "B":
         #Obtener los registros y valor del inmediato
         rs1 = operands_numbers[0]
         rs2 = operands_numbers[1]
         imm = operands_numbers[2]
 
-        #Immediatos
+        # Convertir inmediato para negativos(Usa complemento a dos)
+        imm = imm & 0x1FFF
+
+        #Separar inmediato
         imm_12 = (imm >> 12) & 0x1 # Mascara de 1 bit
         imm_10_5 = (imm >> 5) & 0x3F # Mascara de 6 bits
         imm_4_1 = (imm >> 1) & 0xF # Mascara de 4 bits
@@ -200,14 +240,14 @@ def encode_instruction(instruction: str) -> int:
             (rs2 << 20 ) |       #Bits del 24 al 20
             (rs1 << 15) |        #Bits del 19 al 15
             (funct3 << 12) |     #Bits del 14 al 12
-            (imm_4_1 << 8) |     #Bits del 8 al 11
+            (imm_4_1 << 8) |     #Bits del 11 al 8
             (imm_11 << 7) |      #Bit 7
             (opcode)             #Bits del 6 al 0
         )
 
         return encoded 
     
-    raise NotImplementedError("encode_instruction: pendiente de implementar")
+    # raise NotImplementedError("encode_instruction: pendiente de implementar")
 
 
 def explain_instruction(instruction: str, word: int) -> str:
