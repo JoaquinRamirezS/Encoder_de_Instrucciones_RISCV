@@ -298,6 +298,17 @@ def explain_instruction(instruction: str, word: int) -> str:
             ("[11:7]","rd", (word >> 7) & 0x1F, 5),
             ("[6:0]","opcode", (word) & 0x7F, 7),
         ]
+        #Toma el tercer elemento de cada campo
+        f7, rs2_v, rs1_v, f3, rd_v, op =[c[2] for c in campos]
+        explicacion = (
+            f"** Instruccion tipo R: Operaciones aritméticas y lógicas entre registros.\n"
+            f"* opcode (0b{op:07b}):Indica la categoría general de la instrucción (OPP).\n"
+            f"* rd (x{rd_v}):Registro donde se guarda el resultado de la operación.\n"
+            f"* funct3 (0b{f3:03b}):Indica parte de la operación que se debe realizar.\n"
+            f"* rs1 (x{rs1_v}):Registro que contiene el primer operando.\n"
+            f"* rs2 (x{rs2_v}):Registro que contiene el segundo operando.\n"
+            f"* funct7 (0b{f7:07b}):Junto con opcode y funct3, permite identifcar la operación específica({instruction_name}).\n" 
+        )
 
     elif formato in ["I_Arithmetic","I_Load"]:
         campos = [
@@ -307,6 +318,19 @@ def explain_instruction(instruction: str, word: int) -> str:
             ("[11:7]","rd", (word >> 7) & 0x1F, 5),
             ("[6:0]","opcode", (word) & 0x7F, 7),
         ]
+        #Toma el tercer elemento de cada campo
+        imm_v, rs1_v, f3, rd_v, op =[c[2] for c in campos]
+        #Detecta si el inmediato es un valor positivo o negativo
+        imm_sign = imm_v - 0x1000 if(imm_v & 0x800) else imm_v
+        explicacion = (
+            f"** Instruccion tipo I: Operaciones que utilizan un valor inmediato(OP-IMM).\n"
+            f"* opcode (0b{op:07b}):Indica la categoría general de la instrucción.\n"
+            f"* rd (x{rd_v}):Registro donde se guarda el resultado de la operación.\n"
+            f"* funct3 (0b{f3:03b}):Ayuda a identificar la operación que se va a realizar.\n"
+            f"* rs1 (x{rs1_v}):Registro que contiene el valor de entrada.\n"
+            f"* imm[11:0] ({imm_sign}):Valor inmediato que se utiliza en la operación.\n" 
+        )
+
     elif formato == "S":
         campos = [
             ("[31:25]","imm[11:5]", (word >> 25) & 0x7F, 7),
@@ -316,6 +340,22 @@ def explain_instruction(instruction: str, word: int) -> str:
             ("[11:7]","imm[4:0]", (word >> 7) & 0x1F, 5),
             ("[6:0]","opcode", (word) & 0x7F, 7),
         ]
+        #Toma el tercer elemento de cada campo
+        imm_11_5, rs2_v,rs1_v, f3, imm_4_0, op =[c[2] for c in campos]
+        #Recosntruye el inmediato
+        imm_v = (imm_11_5 << 5) | imm_4_0
+        #Detecta si el inmediato es un valor positivo o negativo
+        imm_sign = imm_v - 0x1000 if(imm_v & 0x800) else imm_v
+
+        explicacion = (
+            f"** Instruccion tipo S: Operaciones de almacenamiento de memoria.\n"
+            f"* opcode (0b{op:07b}):Indica la categoría general de la instrucción (STORE).\n"
+            f"* imm[4:0]({imm_4_0}):Parte baja del desplazamiento de memoria\n"
+            f"* funct3 (0b{f3:03b}):Indica el tamaño del dato que se va a guardar.\n"
+            f"* rs1 (x{rs1_v}):Registo base que contiene la dirección de memoria.\n"                        
+            f"* rs2 (x{rs2_v}):Registo que contiene el dato que se va a guardar.\n"
+            f"* imm[11:5] ({imm_11_5}):Parte alta del desplazamiento(Offset total = {imm_sign}).\n"      
+        )
 
     elif formato == "B":
         campos = [
@@ -328,12 +368,27 @@ def explain_instruction(instruction: str, word: int) -> str:
             ("[7]","imm[11]", (word >> 7) & 0x01, 1),
             ("[6:0]","opcode", (word) & 0x7F, 7),
         ]
+        #Toma el tercer elemento de cada campo
+        imm12,imm_10_5, rs2_v,rs1_v, f3, imm_4_1, imm11, op =[c[2] for c in campos]
+        #Reconstruye el inmediato
+        imm_v = (imm12 << 12) | (imm11 << 11) | (imm_10_5 << 5) | (imm_4_1 << 1)
+         #Detecta si el inmediato es un valor positivo o negativo
+        imm_sign = imm_v - 0x2000 if(imm_v & 0x1000) else imm_v
+
+        explicacion = (
+        f"** Instruccion tipo B:Saltos condicionales.\n"
+            f"* opcode (0b{op:07b}):Indica la categoría general de la instrucción (BRANCH).\n"
+            f"* imm[12], imm[11], imm[10:5], imm[4:1]:Partes del inmediato que juntas forman el desplazamiento del salto.\n"
+            f"* funct3 (0b{f3:03b}):Identifica la condición de salto({instruction_name}).\n"
+            f"* rs1 (x{rs1_v}) y rs2 (x{rs2_v}):Registros que se comparan.\n"                        
+            f"* Desplazamiento del salto:{imm_sign} bytes desde el PC actual.\n"                 
+        )
     else:
         return "Error:Formato no conocido."
     
     # Tabla visual
     #Colores
-    Verde = "\033[92m"
+    Morado = "\033[95m"
     Amarillo = "\033[93m"
     Azul = "\033[94m"
     Reset = "\033[0m"
@@ -345,7 +400,7 @@ def explain_instruction(instruction: str, word: int) -> str:
     borde = " " * 10 + "+" + "+".join(["-" * col_width for _ in campos]) + "+"
 
     #Fila de rangos
-    fila_ranges = " " * 10 + "|" + "|".join(f"{Verde}{r:^{col_width}}{Reset}" for r, _, _, _ in campos) + "|"
+    fila_ranges = " " * 10 + "|" + "|".join(f"{Morado}{r:^{col_width}}{Reset}" for r, _, _, _ in campos) + "|"
     #Fila de nombres
     fila_names = " " * 10 + "|" + "|".join(f"{Amarillo}{n:^{col_width}}{Reset}" for _, n, _, _ in campos) + "|"
     #Fila Valores
@@ -368,8 +423,8 @@ def explain_instruction(instruction: str, word: int) -> str:
         f"{borde}\n"
         f"{fila_values}\n"
         f"{borde}\n\n"
-        f"Palabra binaria: {binary_word_groups}"
-        #f"Palabra Hexadecimal: {hex_word}"
+        f"Palabra binaria: {binary_word_groups}\n\n"
+        f"Explicación:\n{explicacion}" 
     )
 
 def main():
