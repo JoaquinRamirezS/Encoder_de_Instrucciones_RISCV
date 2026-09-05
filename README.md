@@ -8,6 +8,19 @@
 **Fecha:** 4 de septiembre de 2026  
 
 ---
+## Estructura del proyecto
+
+```
+.
+├── encoder_skeleton.py       # Código fuente principal
+├── run.sh                    # Punto de entrada fijo (./run.sh "<instruccion>")
+├── validation.sh             # Script de validación automática (Implementado para verificación)
+├── vectores_ejemplo.txt      # Vectores de prueba base
+├── tabla_validacion.md       # Tabla de resultados contra toolchain
+└── README.md                 # README(instlación,estruictura del pryecto,medio de validación)
+└── DOCUMENTACION.md          # Documentación completa(arquitectura,decisiones de diseño, ejemplos, validaciones)
+```
+
 ## Uso de la herramienta propia
 
 Primero, se debe tener claro cuáles son las instrucciones soportadas.Segun su formato son:
@@ -55,7 +68,7 @@ En caso de que aparezca error en la terminal,la razón sería que se está utili
 ---
 ## Instalación entorno toolchain
 
-Se instaló el toolchain xPack RISC-V GCC (versión 13.2.0) para Windows, este incluye el ensamblador (riscv-none-elf-as) y objdump(riscv-none-elf-objdump), los cuáles son compatibles con la arquitectura RISC-V de 32 bits.
+Se instaló el toolchain xPack RISC-V GCC (versión 13.2.0) para Windows, este incluye el ensamblador (riscv-none-elf-as) y objdump(riscv-none-elf-objdump), los cuáles son compatibles con la arquitectura RISC-V de 32 bits.[1]
 
 ### Pasos de la instalación
 
@@ -66,7 +79,7 @@ Se instaló el toolchain xPack RISC-V GCC (versión 13.2.0) para Windows, este i
 
     `xpm install --global @xpack-dev-tools/riscv-none-elf-gcc@13.2.0-2.1`
 
-- #### Paso 3: Encontrar la futa de instalación 
+- #### Paso 3: Encontrar la ruta de instalación 
 
     `find ~/AppData/Roaming/xPacks -name "riscv-none-elf-gcc.exe" -type f`
 - #### Paso 4: Agregar al PATH
@@ -84,10 +97,11 @@ Se instaló el toolchain xPack RISC-V GCC (versión 13.2.0) para Windows, este i
 ## Validación
 Para validar el correcto funcionamiento del código se creo un archivo `validation.sh`.Su ejecucion es simple:
 -   Primero se deben conceder permisos de ejecución al archivo una vez, con el comando: `chmod +x validation.sh`
-- Luego se ejecuta sinplemente escribiendo en el Git Bash: `./validation.sh`
+- Luego se ejecuta simplemente escribiendo en el Git Bash: `./validation.sh`
   
 
-
+## Referencias
+[1] xPack, “Installation Guide | xPack GNU RISC-V Embedded GCC,” xPack Developer Tools. [Online]. Available:https://xpack-dev-tools.github.io/riscv-none-elf-gcc-xpack/docs/install/. [Accessed: Sept. 1, 2026].
 
 
 

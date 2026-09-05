@@ -301,13 +301,13 @@ def explain_instruction(instruction: str, word: int) -> str:
         #Toma el tercer elemento de cada campo
         f7, rs2_v, rs1_v, f3, rd_v, op =[c[2] for c in campos]
         explicacion = (
-            f"** Instruccion tipo R: Operaciones aritméticas y lógicas entre registros.\n"
-            f"* opcode (0b{op:07b}):Indica la categoría general de la instrucción (OPP).\n"
-            f"* rd (x{rd_v}):Registro donde se guarda el resultado de la operación.\n"
-            f"* funct3 (0b{f3:03b}):Indica parte de la operación que se debe realizar.\n"
-            f"* rs1 (x{rs1_v}):Registro que contiene el primer operando.\n"
-            f"* rs2 (x{rs2_v}):Registro que contiene el segundo operando.\n"
-            f"* funct7 (0b{f7:07b}):Junto con opcode y funct3, permite identifcar la operación específica({instruction_name}).\n" 
+            f"** Instrucción tipo R: Operaciones aritméticas y lógicas entre registros.\n"
+            f"* opcode (0b{op:07b}): Indica la categoría general de la instrucción (OPP).\n"
+            f"* rd (x{rd_v}): Registro donde se guarda el resultado de la operación.\n"
+            f"* funct3 (0b{f3:03b}): Indica parte de la operación que se debe realizar.\n"
+            f"* rs1 (x{rs1_v}): Registro que contiene el primer operando.\n"
+            f"* rs2 (x{rs2_v}): Registro que contiene el segundo operando.\n"
+            f"* funct7 (0b{f7:07b}): Junto con opcode y funct3, permite identifcar la operación específica({instruction_name}).\n" 
         )
 
     elif formato in ["I_Arithmetic","I_Load"]:
@@ -322,13 +322,24 @@ def explain_instruction(instruction: str, word: int) -> str:
         imm_v, rs1_v, f3, rd_v, op =[c[2] for c in campos]
         #Detecta si el inmediato es un valor positivo o negativo
         imm_sign = imm_v - 0x1000 if(imm_v & 0x800) else imm_v
+        #Diferencia entre I_Arithmetic e I_Load
+        if formato == "I_Arithmetic":
+            tipo = "aritmético"
+            tipo_description ="Operaciones que utilizan un valor inmediato(OP-IMM)"
+            imm_description = "Valor inmediato que se utiliza en la operación."
+        else:
+            tipo = "de carga"
+            tipo_description ="Carga desde la memoria"
+            imm_description = "Desplazamiento que se suma a rs1 para calcular la dirección de memoria."
+
+
         explicacion = (
-            f"** Instruccion tipo I: Operaciones que utilizan un valor inmediato(OP-IMM).\n"
-            f"* opcode (0b{op:07b}):Indica la categoría general de la instrucción.\n"
-            f"* rd (x{rd_v}):Registro donde se guarda el resultado de la operación.\n"
-            f"* funct3 (0b{f3:03b}):Ayuda a identificar la operación que se va a realizar.\n"
-            f"* rs1 (x{rs1_v}):Registro que contiene el valor de entrada.\n"
-            f"* imm[11:0] ({imm_sign}):Valor inmediato que se utiliza en la operación.\n" 
+            f"** Instrucción tipo I ({tipo}): {tipo_description}.\n"
+            f"* opcode (0b{op:07b}): Indica la categoría general de la instrucción.\n"
+            f"* rd (x{rd_v}): Registro donde se guarda el resultado de la operación.\n"
+            f"* funct3 (0b{f3:03b}): Ayuda a identificar la operación que se va a realizar.\n"
+            f"* rs1 (x{rs1_v}): Registro que contiene el valor de entrada.\n"
+            f"* imm[11:0] ({imm_sign}): {imm_description}\n" 
         )
 
     elif formato == "S":
@@ -348,13 +359,13 @@ def explain_instruction(instruction: str, word: int) -> str:
         imm_sign = imm_v - 0x1000 if(imm_v & 0x800) else imm_v
 
         explicacion = (
-            f"** Instruccion tipo S: Operaciones de almacenamiento de memoria.\n"
-            f"* opcode (0b{op:07b}):Indica la categoría general de la instrucción (STORE).\n"
-            f"* imm[4:0]({imm_4_0}):Parte baja del desplazamiento de memoria\n"
-            f"* funct3 (0b{f3:03b}):Indica el tamaño del dato que se va a guardar.\n"
-            f"* rs1 (x{rs1_v}):Registo base que contiene la dirección de memoria.\n"                        
-            f"* rs2 (x{rs2_v}):Registo que contiene el dato que se va a guardar.\n"
-            f"* imm[11:5] ({imm_11_5}):Parte alta del desplazamiento(Offset total = {imm_sign}).\n"      
+            f"** Instrucción tipo S: Operaciones de almacenamiento de memoria.\n"
+            f"* opcode (0b{op:07b}): Indica la categoría general de la instrucción (STORE).\n"
+            f"* imm[4:0]({imm_4_0}): Parte baja del desplazamiento de memoria\n"
+            f"* funct3 (0b{f3:03b}): Indica el tamaño del dato que se va a guardar.\n"
+            f"* rs1 (x{rs1_v}): Registo base que contiene la dirección de memoria.\n"                        
+            f"* rs2 (x{rs2_v}): Registo que contiene el dato que se va a guardar.\n"
+            f"* imm[11:5] ({imm_11_5}): Parte alta del desplazamiento(Offset total = {imm_sign}).\n"      
         )
 
     elif formato == "B":
@@ -376,11 +387,11 @@ def explain_instruction(instruction: str, word: int) -> str:
         imm_sign = imm_v - 0x2000 if(imm_v & 0x1000) else imm_v
 
         explicacion = (
-        f"** Instruccion tipo B:Saltos condicionales.\n"
-            f"* opcode (0b{op:07b}):Indica la categoría general de la instrucción (BRANCH).\n"
-            f"* imm[12], imm[11], imm[10:5], imm[4:1]:Partes del inmediato que juntas forman el desplazamiento del salto.\n"
-            f"* funct3 (0b{f3:03b}):Identifica la condición de salto({instruction_name}).\n"
-            f"* rs1 (x{rs1_v}) y rs2 (x{rs2_v}):Registros que se comparan.\n"                        
+        f"** Instrucción tipo B: Saltos condicionales.\n"
+            f"* opcode (0b{op:07b}): Indica la categoría general de la instrucción (BRANCH).\n"
+            f"* imm[12], imm[11], imm[10:5], imm[4:1]: Partes del inmediato que juntas forman el desplazamiento del salto.\n"
+            f"* funct3 (0b{f3:03b}): Identifica la condición de salto({instruction_name}).\n"
+            f"* rs1 (x{rs1_v}) y rs2 (x{rs2_v}): Registros que se comparan.\n"                        
             f"* Desplazamiento del salto:{imm_sign} bytes desde el PC actual.\n"                 
         )
     else:
